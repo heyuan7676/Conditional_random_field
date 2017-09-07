@@ -32,7 +32,11 @@ done
 mv *.narrowbed narrowBed/
 
 
-### extract genome information; tissue information
+### extract genome information; tissue information; sample information
+
+### filter out fetal / child samples
+### filter out broadPeak file, use narrowPeak for more precise information
+
 ### lift GRCh38 to hg19
 
 
@@ -42,26 +46,35 @@ cd ${tooldir}
 for f in $filename
 do
 	expr=${f%.bed}
-	genome=`cat ${datadir}/metadata.tsv | grep ^${expr} | cut -d'       ' -f 43`
+	filetype=`cat ${datadir}/metadata.tsv | grep ^${expr} | cut -d'       ' -f 2`
 	tissue=`cat ${datadir}/metadata.tsv | grep ^${expr} | cut -d'       ' -f 7`
-	tissue_condensed=${tissue// /_}
-	newfn=${f%.bed}_${tissue_condensed}_${genome}.bed
-	mv ${datadir}/$f ${datadir}/${newfn}
-	if [[ $genome == "GRCh38" ]]
+	sample_age=`cat ${datadir}/metadata.tsv | grep ^${expr} | cut -d'       ' -f 9`
+	genome=`cat ${datadir}/metadata.tsv | grep ^${expr} | cut -d'       ' -f 43`
+	if [[ "$filetype" == "bed narrowPeak" ]] && [[ "$sample_age" == "adult" ]]
 	then
-		echo $newfn
-		./liftOver ${datadir}/${newfn} hg38ToHg19.over.chain.gz ${datadir}/${newfn//GRCh38/hg19} ${datadir}/${newfn%.bed}_unlifted.bed
+		tissue_condensed=${tissue// /_}
+		newfn=${f%.bed}_${tissue_condensed}_${genome}.bed
+		mv ${datadir}/$f ${datadir}/${newfn}
+		if [[ $genome == "GRCh38" ]]
+		then	
+			echo $newfn
+			./liftOver ${datadir}/${newfn} hg38ToHg19.over.chain.gz ${datadir}/${newfn//GRCh38/hg19} ${datadir}/${newfn%.bed}_unlifted.bed
+		fi
+	else
+		mv ${datadir}/$f ${datadir}/notused
 	fi
 done
 
 
-rm *GRCh38*
+mv *GRCh38* GRCh38_notused
 
 
 
 ### merge data for the same tissue
 
-tissues=(stomach heart small_intestine adrenal_gland brain lung heart_left_ventricle frontal_cortex pancreas prostate_gland spleen uterus caudate_nucleus cerebellar_cortex cerebellum putamen skin_of_body muscle tibial_artery tibial_nerve)
+#tissues=(stomach heart small_intestine adrenal_gland brain lung heart_left_ventricle frontal_cortex pancreas prostate_gland spleen uterus caudate_nucleus cerebellar_cortex cerebellum putamen skin_of_body muscle tibial_artery tibial_nerve)
+
+tissues=(stomach heart small_intestine)
 for t in ${tissues[@]}
 do
 	echo $t
