@@ -1,0 +1,8 @@
+ATAC_homer_snp
+ATAC_homer_gene
+functionality_score_snp
+functionality_score_gene
+hicvalues
+distance
+same_domain
+same_compartment
